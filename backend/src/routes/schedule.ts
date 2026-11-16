@@ -4,8 +4,11 @@ import {
   logDose,
   resetDaySchedule,
 } from '../controllers/scheduleController.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
+
+router.use(authenticateToken);
 
 router.get('/', getSchedule);
 router.post('/log', logDose);

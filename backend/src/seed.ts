@@ -1,9 +1,11 @@
+import bcrypt from 'bcryptjs';
 import { prisma } from './lib/prisma.js';
 
 async function seed() {
-  console.log('Seeding SQLite database with real clinical data...');
+  console.log('Seeding MongoDB database with real clinical data...');
 
   // Clean old data
+  await prisma.user.deleteMany();
   await prisma.caregiverNote.deleteMany();
   await prisma.adherenceLog.deleteMany();
   await prisma.scheduleItem.deleteMany();
@@ -15,7 +17,6 @@ async function seed() {
   // 1. Seed Patients
   const eleanor = await prisma.patient.create({
     data: {
-      id: 'pat-1',
       fullName: 'Eleanor Vance',
       preferredName: 'Eleanor',
       age: 68,
@@ -33,7 +34,6 @@ async function seed() {
 
   const mateo = await prisma.patient.create({
     data: {
-      id: 'pat-2',
       fullName: 'Don Mateo Hernandez',
       preferredName: 'Mateo',
       age: 72,
@@ -50,9 +50,8 @@ async function seed() {
   });
 
   // 2. Seed Caregivers
-  await prisma.caregiver.create({
+  const cgDavid = await prisma.caregiver.create({
     data: {
-      id: 'cg-1',
       name: 'David Vance',
       relationship: 'Son',
       phone: '+1 (555) 234-5678',
@@ -63,7 +62,6 @@ async function seed() {
 
   await prisma.caregiver.create({
     data: {
-      id: 'cg-2',
       name: 'Sofia Hernandez',
       relationship: 'Daughter',
       phone: '+1 (555) 876-5432',
@@ -75,7 +73,6 @@ async function seed() {
   // 3. Seed Medications for Eleanor
   const med1 = await prisma.medication.create({
     data: {
-      id: 'med-1',
       patientId: eleanor.id,
       name: 'Metformin',
       genericName: 'Metformin Hydrochloride',
@@ -120,7 +117,6 @@ async function seed() {
 
   const med2 = await prisma.medication.create({
     data: {
-      id: 'med-2',
       patientId: eleanor.id,
       name: 'Lisinopril',
       genericName: 'Lisinopril Dihydrate',
@@ -164,7 +160,6 @@ async function seed() {
 
   const med3 = await prisma.medication.create({
     data: {
-      id: 'med-3',
       patientId: eleanor.id,
       name: 'Atorvastatin',
       genericName: 'Atorvastatin Calcium',
@@ -209,7 +204,6 @@ async function seed() {
   // 4. Seed Schedule Items
   await prisma.scheduleItem.create({
     data: {
-      id: 'sched-1',
       patientId: eleanor.id,
       medicationId: med1.id,
       timeSlot: 'morning',
@@ -223,7 +217,6 @@ async function seed() {
 
   await prisma.scheduleItem.create({
     data: {
-      id: 'sched-2',
       patientId: eleanor.id,
       medicationId: med2.id,
       timeSlot: 'morning',
@@ -237,7 +230,6 @@ async function seed() {
 
   await prisma.scheduleItem.create({
     data: {
-      id: 'sched-3',
       patientId: eleanor.id,
       medicationId: med1.id,
       timeSlot: 'evening',
@@ -248,7 +240,6 @@ async function seed() {
 
   await prisma.scheduleItem.create({
     data: {
-      id: 'sched-4',
       patientId: eleanor.id,
       medicationId: med3.id,
       timeSlot: 'bedtime',
@@ -260,9 +251,8 @@ async function seed() {
   // 5. Seed Caregiver Notes
   await prisma.caregiverNote.create({
     data: {
-      id: 'note-1',
       patientId: eleanor.id,
-      caregiverId: 'cg-1',
+      caregiverId: cgDavid.id,
       caregiverName: 'David Vance (Son)',
       text: 'Good morning Mom! I placed a fresh pitcher of ice water on your kitchen table. Remember to take your morning pill after eating your oatmeal! ❤️',
       timestamp: 'Today at 7:15 AM',
@@ -273,9 +263,8 @@ async function seed() {
 
   await prisma.caregiverNote.create({
     data: {
-      id: 'note-2',
       patientId: eleanor.id,
-      caregiverId: 'cg-1',
+      caregiverId: cgDavid.id,
       caregiverName: 'David Vance (Son)',
       text: 'Dr. Sarah Chen scheduled a follow-up review for next Tuesday at 10:30 AM. I will pick you up at 9:45 AM.',
       timestamp: 'Yesterday at 4:20 PM',
@@ -287,7 +276,6 @@ async function seed() {
   // 6. Seed Adherence Logs
   await prisma.adherenceLog.create({
     data: {
-      id: 'log-1',
       patientId: eleanor.id,
       medicationName: 'Metformin',
       dosage: '500 mg',
@@ -301,7 +289,6 @@ async function seed() {
 
   await prisma.adherenceLog.create({
     data: {
-      id: 'log-2',
       patientId: eleanor.id,
       medicationName: 'Lisinopril',
       dosage: '10 mg',
@@ -315,7 +302,6 @@ async function seed() {
 
   await prisma.adherenceLog.create({
     data: {
-      id: 'log-3',
       patientId: eleanor.id,
       medicationName: 'Metformin',
       dosage: '500 mg',
@@ -330,7 +316,6 @@ async function seed() {
   // 7. Seed Educational Articles
   await prisma.educationalArticle.create({
     data: {
-      id: 'edu-1',
       category: 'instructions',
       title: JSON.stringify({
         en: 'How to Read Your Pill Bottle Without Getting Confused',
@@ -357,7 +342,6 @@ async function seed() {
 
   await prisma.educationalArticle.create({
     data: {
-      id: 'edu-2',
       category: 'safety',
       title: JSON.stringify({
         en: 'What to Do If You Forgot Your Morning Pill',
@@ -384,7 +368,6 @@ async function seed() {
 
   await prisma.educationalArticle.create({
     data: {
-      id: 'edu-3',
       category: 'interactions',
       title: JSON.stringify({
         en: 'Why Taking Medicines With Food Actually Matters',
@@ -409,7 +392,59 @@ async function seed() {
     },
   });
 
-  console.log('Database seeded successfully with authentic clinical data!');
+  // 8. Seed RBAC Users linked to real records
+  const passwordHash = await bcrypt.hash('password123', 10);
+
+  await prisma.user.create({
+    data: {
+      email: 'eleanor@example.com',
+      passwordHash,
+      name: 'Eleanor Vance',
+      role: 'PATIENT',
+      patientId: eleanor.id,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'david@example.com',
+      passwordHash,
+      name: 'David Vance',
+      role: 'CAREGIVER',
+      patientId: eleanor.id,
+      caregiverId: cgDavid.id,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'dr.chen@example.com',
+      passwordHash,
+      name: 'Dr. Sarah Chen, MD',
+      role: 'CLINICIAN',
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'admin@example.com',
+      passwordHash,
+      name: 'System Administrator',
+      role: 'ADMIN',
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'mateo@example.com',
+      passwordHash,
+      name: 'Don Mateo Hernandez',
+      role: 'PATIENT',
+      patientId: mateo.id,
+    },
+  });
+
+  console.log('MongoDB database seeded successfully with authentic clinical data and RBAC users!');
 }
 
 seed()

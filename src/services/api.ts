@@ -5,9 +5,34 @@ import {
   AdherenceStats,
   CaregiverNote,
   EducationalArticle,
+  AuthUser,
+  RbacRole,
 } from '../types';
 
 const API_BASE = '/api';
+
+let token: string | null = typeof window !== 'undefined' ? localStorage.getItem('dosebridge_jwt') : null;
+
+export const setStoredToken = (newToken: string | null) => {
+  token = newToken;
+  if (typeof window !== 'undefined') {
+    if (newToken) {
+      localStorage.setItem('dosebridge_jwt', newToken);
+    } else {
+      localStorage.removeItem('dosebridge_jwt');
+    }
+  }
+};
+
+export const getStoredToken = () => token;
+
+const getHeaders = (extra: Record<string, string> = {}) => {
+  const headers: Record<string, string> = { ...extra };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
 
 // Realistic clinical fallback data if backend is offline or during offline testing
 const FALLBACK_PATIENTS: PatientProfile[] = [
@@ -253,6 +278,77 @@ let localNotes: CaregiverNote[] = [
 ];
 
 export const api = {
+  // ----------------------------------------------------
+  // Authentication & RBAC API Endpoints
+  // ----------------------------------------------------
+  async login(
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; token: string; user: AuthUser; message?: string }> {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || 'Failed to sign in. Please verify your credentials.');
+    }
+    setStoredToken(json.token);
+    return json;
+  },
+
+  async register(payload: {
+    email: string;
+    password: string;
+    name: string;
+    role?: RbacRole;
+    accessCode?: string;
+  }): Promise<{ success: boolean; token: string; user: AuthUser; message?: string }> {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || 'Failed to create user account.');
+    }
+    setStoredToken(json.token);
+    return json;
+  },
+
+  async getMe(): Promise<{ success: boolean; user: AuthUser }> {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: getHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || 'Failed to load user session.');
+    }
+    return json;
+  },
+
+  async switchRole(
+    newRole: RbacRole
+  ): Promise<{ success: boolean; token: string; user: AuthUser; message?: string }> {
+    const res = await fetch(`${API_BASE}/auth/switch-role`, {
+      method: 'POST',
+      headers: getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ newRole }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || 'Failed to switch role.');
+    }
+    setStoredToken(json.token);
+    return json;
+  },
+
+  logout(): void {
+    setStoredToken(null);
+  },
+
   // Patients
   async getPatients(): Promise<PatientProfile[]> {
     try {
@@ -287,7 +383,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/patients/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(updates),
       });
       if (res.ok) {
@@ -366,7 +462,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/medications`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(med),
       });
       if (res.ok) {
@@ -416,7 +512,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/medications/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(updates),
       });
       if (res.ok) {
@@ -436,7 +532,10 @@ export const api = {
 
   async deleteMedication(id: string): Promise<void> {
     try {
-      await fetch(`${API_BASE}/medications/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/medications/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
     } catch {
       // Fallback
     }
@@ -448,7 +547,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/medications/${id}/refill`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ amount }),
       });
       if (res.ok) {
@@ -501,7 +600,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/schedule/log`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -628,7 +727,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/caregiver/link`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -684,7 +783,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/caregiver/notes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -710,7 +809,10 @@ export const api = {
 
   async deleteCaregiverNote(id: string): Promise<void> {
     try {
-      await fetch(`${API_BASE}/caregiver/notes/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/caregiver/notes/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
     } catch {
       // Fallback
     }

@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { resolvePatientId } from '../lib/dbHelpers.js';
 
 export const getAdherence = async (req: Request, res: Response) => {
   try {
-    const patientId = (req.query.patientId as string) || 'pat-1';
+    const rawPatientId = req.query.patientId as string | undefined;
+    const patientId = await resolvePatientId(rawPatientId);
 
     const logs = await prisma.adherenceLog.findMany({
       where: { patientId },
@@ -12,8 +14,8 @@ export const getAdherence = async (req: Request, res: Response) => {
     });
 
     const totalLogs = logs.length;
-    const takenCount = logs.filter((l) => l.action === 'taken').length;
-    const skippedCount = logs.filter((l) => l.action === 'skipped').length;
+    const takenCount = logs.filter((l: any) => l.action === 'taken').length;
+    const skippedCount = logs.filter((l: any) => l.action === 'skipped').length;
     const adherenceRate = totalLogs > 0 ? Math.round((takenCount / totalLogs) * 100) : 100;
 
     // Weekly day breakdown
@@ -42,7 +44,7 @@ export const getAdherence = async (req: Request, res: Response) => {
         totalDosesTaken: takenCount,
         totalDosesSkipped: skippedCount,
         weeklyBreakdown,
-        recentLogs: logs.map((l) => ({
+        recentLogs: logs.map((l: any) => ({
           id: l.id,
           patientId: l.patientId,
           medicationName: l.medicationName,

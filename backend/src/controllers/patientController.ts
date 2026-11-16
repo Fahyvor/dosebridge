@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { resolvePatientId, isValidObjectId } from '../lib/dbHelpers.js';
 
 function formatPatient(p: any) {
   return {
@@ -37,7 +38,11 @@ export const getPatients = async (req: Request, res: Response) => {
 
 export const getPatientById = async (req: Request, res: Response) => {
   try {
-    const id = String(req.params.id);
+    const rawId = String(req.params.id);
+    const id = await resolvePatientId(rawId);
+    if (!id) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
     const patient = await prisma.patient.findUnique({
       where: { id },
       include: { caregivers: true, medications: true },
@@ -100,7 +105,11 @@ export const createPatient = async (req: Request, res: Response) => {
 
 export const updatePatient = async (req: Request, res: Response) => {
   try {
-    const id = String(req.params.id);
+    const rawId = String(req.params.id);
+    const id = await resolvePatientId(rawId);
+    if (!id) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
     const {
       fullName,
       preferredName,

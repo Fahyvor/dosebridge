@@ -49,10 +49,19 @@ import {
   openSkipModal,
   closeSkipModal,
 } from './slices/uiSlice';
+import {
+  loginUser,
+  registerUser,
+  checkCurrentUser,
+  switchUserRole,
+  quickSignInAs,
+  logout as logoutAction,
+} from './slices/authSlice';
 import { speechService } from '../services/speech';
 import { playSuccessChime, playReminderAlarm, playTapTone } from '../services/sound';
 import {
   UserRole,
+  RbacRole,
   Language,
   FontSize,
   ContrastTheme,
@@ -72,6 +81,7 @@ export const useDoseBridge = () => {
   const caregiverState = useAppSelector((state) => state.caregiver);
   const accessibilityState = useAppSelector((state) => state.accessibility);
   const uiState = useAppSelector((state) => state.ui);
+  const authState = useAppSelector((state) => state.auth);
 
   const activePatient = patientsState.activePatient;
   const patients = patientsState.patients;
@@ -126,6 +136,12 @@ export const useDoseBridge = () => {
 
   // Initial load: Fetch real patients from API into Redux
   const refreshData = useCallback(async () => {
+    try {
+      await dispatch(checkCurrentUser()).unwrap();
+    } catch {
+      // Guest or default session
+    }
+
     const patientsRes = await dispatch(fetchPatients()).unwrap();
     const targetPatient = activePatient
       ? patientsRes.find((p) => p.id === activePatient.id) || patientsRes[0]
@@ -404,7 +420,81 @@ export const useDoseBridge = () => {
     [dispatch, playTap]
   );
 
+  // Auth & RBAC Actions
+  const login = useCallback(
+    async (email: string, pass: string) => {
+      const res = await dispatch(loginUser({ email, password: pass })).unwrap();
+      playChime();
+      announce(`Signed in as ${res.user.name} (${res.user.role})`);
+      if (res.user.role === 'CAREGIVER') {
+        dispatch(setRoleAction('caregiver'));
+      } else {
+        dispatch(setRoleAction('patient'));
+      }
+      return res;
+    },
+    [dispatch, playChime, announce]
+  );
+
+  const register = useCallback(
+    async (payload: { email: string; password: string; name: string; role?: RbacRole; accessCode?: string }) => {
+      const res = await dispatch(registerUser(payload)).unwrap();
+      playChime();
+      announce(`Account created for ${res.user.name}`);
+      return res;
+    },
+    [dispatch, playChime, announce]
+  );
+
+  const switchRole = useCallback(
+    async (newRole: RbacRole) => {
+      const res = await dispatch(switchUserRole(newRole)).unwrap();
+      playTap();
+      announce(`Switched active RBAC role to ${newRole}`);
+      if (newRole === 'CAREGIVER') {
+        dispatch(setRoleAction('caregiver'));
+      } else {
+        dispatch(setRoleAction('patient'));
+      }
+      return res;
+    },
+    [dispatch, playTap, announce]
+  );
+
+  const quickSignIn = useCallback(
+    async (roleType: 'patient' | 'caregiver' | 'clinician') => {
+      const res = await dispatch(quickSignInAs(roleType)).unwrap();
+      playChime();
+      announce(`Active user switched to: ${res.user.name}`);
+      if (res.user.role === 'CAREGIVER') {
+        dispatch(setRoleAction('caregiver'));
+      } else {
+        dispatch(setRoleAction('patient'));
+      }
+      return res;
+    },
+    [dispatch, playChime, announce]
+  );
+
+  const logout = useCallback(() => {
+    dispatch(logoutAction());
+    playTap();
+    announce('Signed out');
+  }, [dispatch, playTap, announce]);
+
   return {
+    // Auth & RBAC
+    authUser: authState.user,
+    authRole: authState.role,
+    isAuthenticated: authState.isAuthenticated,
+    authLoading: authState.loading,
+    authError: authState.error,
+    login,
+    register,
+    switchRole,
+    quickSignIn,
+    logout,
+
     // Redux State
     role,
     setRole: handleSetRole,

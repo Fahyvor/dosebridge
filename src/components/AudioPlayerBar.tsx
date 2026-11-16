@@ -1,12 +1,4 @@
 import React from 'react';
-import {
-  FaPlay,
-  FaPause,
-  FaStop,
-  FaVolumeHigh,
-  FaRotateLeft,
-  FaGaugeHigh,
-} from 'react-icons/fa6';
 import { useDoseBridge } from '../store/useDoseBridge';
 
 export const AudioPlayerBar: React.FC = () => {
@@ -41,73 +33,63 @@ export const AudioPlayerBar: React.FC = () => {
     <div
       role="region"
       aria-label="Audio Instructions Player"
-      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-2xl bg-white/95 border border-stone-300 shadow-xl backdrop-blur-md rounded-2xl p-3 text-stone-900 flex flex-col md:flex-row items-center justify-between gap-3 animate-slide-up"
+      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-2xl bg-white/95 border border-[#e7e2d8] shadow-xl backdrop-blur-md rounded-2xl p-3.5 text-[#1c1917] flex flex-col md:flex-row items-center justify-between gap-3"
     >
       {/* Audio indicator & spoken text */}
       <div className="flex items-center gap-3 w-full md:w-auto flex-1 min-w-0">
-        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
-          <FaVolumeHigh className="text-sm animate-pulse" />
-        </div>
-
+        <span className="w-2.5 h-2.5 rounded-full bg-[#1e3a2f] animate-ping shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              Reading aloud
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#1e3a2f] bg-[#e7e2d8]/60 px-2 py-0.5 rounded-md">
+              Reading Aloud
             </span>
           </div>
-          <p className="text-xs font-medium text-stone-700 truncate mt-0.5" title={speakingText}>
+          <p className="text-xs font-medium text-[#44403c] truncate mt-0.5" title={speakingText}>
             {speakingText || 'Reading instructions...'}
           </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-2 shrink-0 text-xs">
         <button
           onClick={handleSpeedToggle}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-xs font-semibold text-stone-700 transition-colors cursor-pointer"
+          className="px-2.5 py-1 rounded-lg border border-[#e7e2d8] bg-[#faf8f5] hover:bg-[#f2ede4] font-medium text-[#57534e] transition-colors cursor-pointer"
           title="Change playback speed"
           aria-label={`Reading speed: ${speechRate}x. Click to change.`}
         >
-          <FaGaugeHigh className="text-stone-500 text-[10px]" />
-          <span>{speechRate}x</span>
+          {speechRate}x
         </button>
 
         <button
           onClick={handleReplay}
-          className="p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors cursor-pointer"
+          className="px-2.5 py-1 rounded-lg border border-[#e7e2d8] bg-[#faf8f5] hover:bg-[#f2ede4] text-[#57534e] font-medium transition-colors cursor-pointer"
           title="Replay from start"
-          aria-label="Replay audio"
         >
-          <FaRotateLeft className="text-xs" />
+          Replay
         </button>
 
-        <button
-          onClick={resumeSpeaking}
-          className="p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors cursor-pointer"
-          title="Resume speech"
-          aria-label="Resume audio"
-        >
-          <FaPlay className="text-xs" />
-        </button>
-
-        <button
-          onClick={pauseSpeaking}
-          className="p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors cursor-pointer"
-          title="Pause speech"
-          aria-label="Pause audio"
-        >
-          <FaPause className="text-xs" />
-        </button>
+        {isSpeaking ? (
+          <button
+            onClick={pauseSpeaking}
+            className="px-3 py-1 rounded-lg border border-[#e7e2d8] bg-[#faf8f5] hover:bg-[#f2ede4] text-[#1c1917] font-medium transition-colors cursor-pointer"
+          >
+            Pause
+          </button>
+        ) : (
+          <button
+            onClick={resumeSpeaking}
+            className="px-3 py-1 rounded-lg bg-[#1e3a2f] text-white font-medium transition-colors cursor-pointer"
+          >
+            Resume
+          </button>
+        )}
 
         <button
           onClick={stopSpeaking}
-          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-stone-200 hover:bg-rose-100 hover:text-rose-800 font-semibold text-xs text-stone-700 transition-colors cursor-pointer"
-          title="Stop reading"
-          aria-label="Stop audio reading"
+          className="px-2.5 py-1 rounded-lg border border-[#fecdd3] bg-[#fff1f2] hover:bg-[#ffe4e6] text-[#be123c] font-medium transition-colors cursor-pointer"
         >
-          <FaStop className="text-[10px]" />
-          <span>Stop</span>
+          Stop
         </button>
       </div>
     </div>

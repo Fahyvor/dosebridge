@@ -13,7 +13,11 @@ export const CaregiverTab: React.FC = () => {
     deleteCaregiverNote,
     linkNewPatient,
     takeDose,
+    authRole,
+    switchRole,
   } = useDoseBridge();
+
+  const canManageCaregiver = authRole === 'CAREGIVER' || authRole === 'CLINICIAN' || authRole === 'ADMIN';
 
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [accessCodeInput, setAccessCodeInput] = useState('');
@@ -231,51 +235,68 @@ export const CaregiverTab: React.FC = () => {
           </p>
         </div>
 
-        {/* Add Note Form */}
-        <form onSubmit={handleCreateNote} className="mt-5 space-y-3">
-          <textarea
-            rows={2}
-            value={newNoteText}
-            onChange={(e) => setNewNoteText(e.target.value)}
-            placeholder="Write a message (e.g. Left a fresh water tumbler on the kitchen counter, remember to take your evening pill with dinner)..."
-            className="w-full px-4 py-3 rounded-2xl bg-[#faf8f5] border border-[#e7e2d8] text-[#1c1917] text-sm placeholder:text-[#a8a29e] focus:outline-none focus:border-[#1e3a2f] resize-none"
-          />
+        {/* Add Note Form or RBAC Notice */}
+        {canManageCaregiver ? (
+          <form onSubmit={handleCreateNote} className="mt-5 space-y-3">
+            <textarea
+              rows={2}
+              value={newNoteText}
+              onChange={(e) => setNewNoteText(e.target.value)}
+              placeholder="Write a message (e.g. Left a fresh water tumbler on the kitchen counter, remember to take your evening pill with dinner)..."
+              className="w-full px-4 py-3 rounded-2xl bg-[#faf8f5] border border-[#e7e2d8] text-[#1c1917] text-sm placeholder:text-[#a8a29e] focus:outline-none focus:border-[#1e3a2f] resize-none"
+            />
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#57534e]">Priority:</span>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#57534e]">Priority:</span>
+                <button
+                  type="button"
+                  onClick={() => setNotePriority('normal')}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                    notePriority === 'normal'
+                      ? 'bg-[#1c1917] text-white'
+                      : 'bg-[#faf8f5] text-[#57534e] border border-[#e7e2d8]'
+                  }`}
+                >
+                  Everyday Note
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNotePriority('important')}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                    notePriority === 'important'
+                      ? 'bg-[#c2410c] text-white'
+                      : 'bg-[#faf8f5] text-[#57534e] border border-[#e7e2d8]'
+                  }`}
+                >
+                  High-Visibility Notice
+                </button>
+              </div>
+
               <button
-                type="button"
-                onClick={() => setNotePriority('normal')}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  notePriority === 'normal'
-                    ? 'bg-[#1c1917] text-white'
-                    : 'bg-[#faf8f5] text-[#57534e] border border-[#e7e2d8]'
-                }`}
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-[#1e3a2f] hover:bg-[#162c23] text-white font-medium text-xs shadow-xs cursor-pointer"
               >
-                Everyday Note
-              </button>
-              <button
-                type="button"
-                onClick={() => setNotePriority('important')}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  notePriority === 'important'
-                    ? 'bg-[#c2410c] text-white'
-                    : 'bg-[#faf8f5] text-[#57534e] border border-[#e7e2d8]'
-                }`}
-              >
-                High-Visibility Notice
+                Post Note
               </button>
             </div>
-
+          </form>
+        ) : (
+          <div className="mt-5 p-4 rounded-2xl bg-[#faf8f5] border border-[#e7e2d8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div>
+              <span className="font-bold text-[#1c1917] block">Caregiver Authorization Required to Post</span>
+              <span className="text-[#57534e]">
+                Care bulletins are authored by family caregivers or clinicians. Active role is currently <strong className="font-mono text-[#1e3a2f]">{authRole}</strong>.
+              </span>
+            </div>
             <button
-              type="submit"
-              className="px-5 py-2 rounded-xl bg-[#1e3a2f] hover:bg-[#162c23] text-white font-medium text-xs shadow-xs cursor-pointer"
+              onClick={() => switchRole('CAREGIVER')}
+              className="px-3.5 py-1.5 rounded-xl bg-[#1e3a2f] text-white font-medium text-xs shadow-xs cursor-pointer whitespace-nowrap"
             >
-              Post Note
+              Authorize as Caregiver
             </button>
           </div>
-        </form>
+        )}
 
         {/* Existing Notes Feed */}
         <div className="mt-6 space-y-3">

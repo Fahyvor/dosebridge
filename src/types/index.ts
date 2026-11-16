@@ -2,6 +2,18 @@ export type Language = 'en' | 'es' | 'fr' | 'yo' | 'ar' | 'zh' | 'hi' | 'sw' | '
 
 export type UserRole = 'patient' | 'caregiver';
 
+export type RbacRole = 'PATIENT' | 'CAREGIVER' | 'CLINICIAN' | 'ADMIN';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: RbacRole;
+  patientId?: string | null;
+  caregiverId?: string | null;
+  patient?: PatientProfile | null;
+}
+
 export type FontSize = 'normal' | 'large' | 'xl' | 'jumbo';
 
 export type ContrastTheme = 'dark' | 'high-contrast-dark' | 'high-contrast-light' | 'soft-calm';

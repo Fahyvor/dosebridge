@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { resolvePatientId, isValidObjectId } from '../lib/dbHelpers.js';
 
 function formatMedication(m: any) {
   return {
@@ -31,8 +32,14 @@ function formatMedication(m: any) {
 
 export const getMedications = async (req: Request, res: Response) => {
   try {
-    const { patientId } = req.query;
-    const where = patientId ? { patientId: String(patientId) } : {};
+    const rawPatientId = req.query.patientId as string | undefined;
+    let where = {};
+    if (rawPatientId) {
+      const resolvedId = await resolvePatientId(rawPatientId);
+      if (resolvedId) {
+        where = { patientId: resolvedId };
+      }
+    }
     const medications = await prisma.medication.findMany({
       where,
       orderBy: { createdAt: 'asc' },
@@ -47,6 +54,9 @@ export const getMedications = async (req: Request, res: Response) => {
 export const getMedicationById = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Medication not found' });
+    }
     const medication = await prisma.medication.findUnique({
       where: { id },
     });
@@ -63,7 +73,7 @@ export const getMedicationById = async (req: Request, res: Response) => {
 export const createMedication = async (req: Request, res: Response) => {
   try {
     const {
-      patientId,
+      patientId: rawPatientId,
       name,
       genericName,
       strength,
@@ -91,6 +101,8 @@ export const createMedication = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'Name and strength are required' });
     }
 
+    const patientId = await resolvePatientId(rawPatientId);
+
     const defaultInstructions = {
       en: {
         standard: `Take 1 ${form || 'tablet'} of ${name} ${strength} orally as prescribed.`,
@@ -102,7 +114,7 @@ export const createMedication = async (req: Request, res: Response) => {
 
     const newMed = await prisma.medication.create({
       data: {
-        patientId: patientId || 'pat-1',
+        patientId,
         name,
         genericName: genericName || name,
         strength,
@@ -153,6 +165,9 @@ export const createMedication = async (req: Request, res: Response) => {
 export const updateMedication = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Medication not found' });
+    }
     const body = req.body;
 
     const data: any = {};
@@ -192,6 +207,9 @@ export const updateMedication = async (req: Request, res: Response) => {
 export const deleteMedication = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Medication not found' });
+    }
     const deleted = await prisma.medication.delete({
       where: { id },
     });
@@ -205,6 +223,9 @@ export const deleteMedication = async (req: Request, res: Response) => {
 export const refillMedication = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
+    if (!isValidObjectId(id)) {
+      return res.status(404).json({ success: false, message: 'Medication not found' });
+    }
     const med = await prisma.medication.findUnique({ where: { id } });
     if (!med) {
       return res.status(404).json({ success: false, message: 'Medication not found' });

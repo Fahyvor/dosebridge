@@ -13,6 +13,7 @@ export const MedicationsTab: React.FC = () => {
     refillMedication,
     language,
     speakText,
+    authRole,
   } = useDoseBridge();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -253,15 +254,21 @@ export const MedicationsTab: React.FC = () => {
                     </button>
                     {deletingId === med.id ? (
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => {
-                            deleteMedication(med.id);
-                            setDeletingId(null);
-                          }}
-                          className="px-2 py-1 rounded-lg bg-[#b91c1c] text-white font-medium text-[11px] cursor-pointer"
-                        >
-                          Confirm
-                        </button>
+                        {authRole === 'PATIENT' ? (
+                          <span className="text-[10px] font-medium text-[#991b1b] bg-[#fee2e2] px-2 py-1 rounded-md">
+                            Clinician role required
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              deleteMedication(med.id);
+                              setDeletingId(null);
+                            }}
+                            className="px-2 py-1 rounded-lg bg-[#b91c1c] text-white font-medium text-[11px] cursor-pointer"
+                          >
+                            Confirm
+                          </button>
+                        )}
                         <button
                           onClick={() => setDeletingId(null)}
                           className="px-2 py-1 rounded-lg border border-[#e7e2d8] text-[#78716c] text-[11px] cursor-pointer"

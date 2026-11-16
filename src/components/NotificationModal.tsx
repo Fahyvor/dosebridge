@@ -1,11 +1,4 @@
 import React from 'react';
-import {
-  FaBell,
-  FaCheck,
-  FaClock,
-  FaVolumeHigh,
-  FaXmark,
-} from 'react-icons/fa6';
 import { useDoseBridge } from '../store/useDoseBridge';
 import { VisualPill } from './VisualPill';
 
@@ -41,34 +34,29 @@ export const NotificationModal: React.FC = () => {
       aria-labelledby="alarm-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 animate-fade-in"
     >
-      <div className="relative w-full max-w-lg bg-white border border-amber-300 rounded-3xl p-6 sm:p-7 shadow-2xl text-stone-900">
+      <div className="relative w-full max-w-lg bg-white border border-[#fed7aa] rounded-3xl p-6 sm:p-8 shadow-2xl text-[#1c1917]">
         {/* Dismiss Button */}
         <button
           onClick={dismissAlarm}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors cursor-pointer"
-          aria-label="Close reminder"
+          className="absolute top-5 right-5 text-xs text-[#a8a29e] hover:text-[#1c1917] font-semibold cursor-pointer"
+          aria-label="Dismiss reminder"
         >
-          <FaXmark className="text-lg" />
+          Dismiss
         </button>
 
-        {/* Gentle Alarm Header */}
-        <div className="flex items-center gap-3.5 mb-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-100 text-amber-900 shrink-0">
-            <FaBell className="text-xl text-amber-700" />
-          </div>
-          <div>
-            <span className="text-xs font-semibold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-              Reminder • {activeAlarmItem.scheduledTime}
-            </span>
-            <h2 id="alarm-title" className="text-xl sm:text-2xl font-bold text-stone-900 mt-1">
-              Time for your medicine
-            </h2>
-          </div>
+        {/* Reminder Header */}
+        <div className="mb-4">
+          <span className="text-[11px] font-bold text-[#b45309] uppercase tracking-wider bg-[#fef3c7] px-2.5 py-0.5 rounded-md border border-[#fde68a]">
+            Scheduled Reminder • {activeAlarmItem.scheduledTime}
+          </span>
+          <h2 id="alarm-title" className="text-2xl font-serif font-bold text-[#1c1917] mt-1.5">
+            Time for your medicine
+          </h2>
         </div>
 
         {/* Medication Details Card */}
-        <div className="flex items-center gap-4 p-4 rounded-2xl bg-stone-50 border border-stone-200 mb-4">
-          <div className="shrink-0">
+        <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#faf8f5] border border-[#e7e2d8] mb-4">
+          <div className="shrink-0 p-2 rounded-xl bg-white border border-[#e7e2d8]">
             <VisualPill
               color={med.pillColor}
               shape={med.pillShape}
@@ -78,9 +66,9 @@ export const NotificationModal: React.FC = () => {
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-bold text-stone-900 leading-tight">{med.name}</h3>
-            <p className="text-xs font-semibold text-emerald-800">{med.strength} • {med.form}</p>
-            <p className="text-xs text-stone-600 mt-1 line-clamp-2 leading-relaxed">
+            <h3 className="text-lg font-serif font-bold text-[#1c1917] leading-tight">{med.name}</h3>
+            <p className="text-xs font-mono font-semibold text-[#1e3a2f]">{med.strength} • {med.form}</p>
+            <p className="text-xs text-[#57534e] mt-1 line-clamp-2 leading-relaxed">
               {instructionObj?.simple || instructionObj?.standard}
             </p>
           </div>
@@ -89,28 +77,25 @@ export const NotificationModal: React.FC = () => {
         {/* Read aloud button */}
         <button
           onClick={handleSpeak}
-          className="w-full mb-4 py-2 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          className="w-full mb-4 py-2 px-4 rounded-xl bg-[#faf8f5] hover:bg-[#f2ede4] border border-[#e7e2d8] text-[#1c1917] font-medium text-xs transition-colors cursor-pointer text-center"
         >
-          <FaVolumeHigh className="text-stone-500 text-xs" />
-          <span>Read instructions aloud</span>
+          Read instructions aloud
         </button>
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={handleSnooze}
-            className="py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl border border-[#e7e2d8] bg-white hover:bg-[#faf8f5] text-[#57534e] font-semibold text-xs transition-colors cursor-pointer"
           >
-            <FaClock className="text-stone-500" />
-            <span>Need 15 Minutes</span>
+            Remind in 15 Minutes
           </button>
 
           <button
             onClick={handleTake}
-            className="py-2.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-sm shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl bg-[#1e3a2f] hover:bg-[#162c23] text-white font-semibold text-xs shadow-xs transition-transform active:scale-95 cursor-pointer"
           >
-            <FaCheck />
-            <span>I&apos;ve Taken This</span>
+            Confirm Dose Taken
           </button>
         </div>
       </div>

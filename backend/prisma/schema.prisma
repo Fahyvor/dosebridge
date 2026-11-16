@@ -3,12 +3,26 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         String     @default("PATIENT") // RBAC roles: "PATIENT", "CAREGIVER", "CLINICIAN", "ADMIN"
+  patientId    String?    @db.ObjectId
+  patient      Patient?   @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  caregiverId  String?    @db.ObjectId
+  caregiver    Caregiver? @relation(fields: [caregiverId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
 model Patient {
-  id                    String          @id @default(cuid())
+  id                    String          @id @default(auto()) @map("_id") @db.ObjectId
   fullName              String
   preferredName         String
   age                   Int
@@ -24,6 +38,7 @@ model Patient {
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
+  users                 User[]
   caregivers            Caregiver[]
   medications           Medication[]
   scheduleItems         ScheduleItem[]
@@ -32,19 +47,21 @@ model Patient {
 }
 
 model Caregiver {
-  id           String   @id @default(cuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   name         String
   relationship String
   phone        String
   email        String
-  patientId    String
+  patientId    String   @db.ObjectId
   patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
+
+  users        User[]
 }
 
 model Medication {
-  id                String         @id @default(cuid())
-  patientId         String
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  patientId         String         @db.ObjectId
   patient           Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
   name              String
   genericName       String
@@ -74,10 +91,10 @@ model Medication {
 }
 
 model ScheduleItem {
-  id            String     @id @default(cuid())
-  patientId     String
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  patientId     String     @db.ObjectId
   patient       Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  medicationId  String
+  medicationId  String     @db.ObjectId
   medication    Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
   timeSlot      String     // morning, afternoon, evening, bedtime
   scheduledTime String     // e.g. "08:00 AM"
@@ -92,8 +109,8 @@ model ScheduleItem {
 }
 
 model AdherenceLog {
-  id             String   @id @default(cuid())
-  patientId      String
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId      String   @db.ObjectId
   patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   medicationName String
   dosage         String
@@ -107,8 +124,8 @@ model AdherenceLog {
 }
 
 model CaregiverNote {
-  id            String   @id @default(cuid())
-  patientId     String
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId     String   @db.ObjectId
   patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   caregiverId   String
   caregiverName String
@@ -120,7 +137,7 @@ model CaregiverNote {
 }
 
 model EducationalArticle {
-  id            String   @id @default(cuid())
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
   category      String   // instructions, storage, safety, interactions, emergency
   title         String   // JSON string
   summary       String   // JSON string

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { resolvePatientId, isValidObjectId } from '../lib/dbHelpers.js';
 
 export const getCaregiverPatients = async (req: Request, res: Response) => {
   try {
@@ -13,12 +14,12 @@ export const getCaregiverPatients = async (req: Request, res: Response) => {
       },
     });
 
-    const summaries = patients.map((patient) => {
-      const pSchedule = patient.scheduleItems;
-      const pMeds = patient.medications;
-      const pendingCount = pSchedule.filter((s) => s.status === 'pending').length;
-      const takenCount = pSchedule.filter((s) => s.status === 'taken').length;
-      const lowRefillCount = pMeds.filter((m) => m.pillsRemaining <= m.refillThreshold).length;
+    const summaries = patients.map((patient: any) => {
+      const pSchedule = patient.scheduleItems || [];
+      const pMeds = patient.medications || [];
+      const pendingCount = pSchedule.filter((s: any) => s.status === 'pending').length;
+      const takenCount = pSchedule.filter((s: any) => s.status === 'taken').length;
+      const lowRefillCount = pMeds.filter((m: any) => m.pillsRemaining <= m.refillThreshold).length;
 
       return {
         id: patient.id,
@@ -74,7 +75,7 @@ export const linkPatientByCode = async (req: Request, res: Response) => {
       });
     }
 
-    const existingLink = patient.caregivers.find((c) => c.name.toLowerCase() === (caregiverName || '').toLowerCase());
+    const existingLink = patient.caregivers.find((c: any) => c.name.toLowerCase() === (caregiverName || '').toLowerCase());
     if (existingLink) {
       return res.status(400).json({
         success: false,
@@ -110,7 +111,8 @@ export const linkPatientByCode = async (req: Request, res: Response) => {
 
 export const getCaregiverNotes = async (req: Request, res: Response) => {
   try {
-    const patientId = (req.query.patientId as string) || 'pat-1';
+    const rawPatientId = req.query.patientId as string | undefined;
+    const patientId = await resolvePatientId(rawPatientId);
 
     const notes = await prisma.caregiverNote.findMany({
       where: { patientId },
@@ -126,15 +128,17 @@ export const getCaregiverNotes = async (req: Request, res: Response) => {
 
 export const createCaregiverNote = async (req: Request, res: Response) => {
   try {
-    const { patientId, text, priority, caregiverName } = req.body;
+    const { patientId: rawPatientId, text, priority, caregiverName } = req.body;
 
     if (!text || text.trim() === '') {
       return res.status(400).json({ success: false, message: 'Note text cannot be empty' });
     }
 
+    const patientId = await resolvePatientId(rawPatientId);
+
     const newNote = await prisma.caregiverNote.create({
       data: {
-        patientId: patientId || 'pat-1',
+        patientId,
         caregiverId: 'cg-1',
         caregiverName: caregiverName || 'David Vance (Caregiver)',
         text: text.trim(),
@@ -158,6 +162,9 @@ export const createCaregiverNote = async (req: Request, res: Response) => {
 export const deleteCaregiverNote = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid note ID format' });
+    }
     await prisma.caregiverNote.delete({
       where: { id },
     });
@@ -170,7 +177,8 @@ export const deleteCaregiverNote = async (req: Request, res: Response) => {
 
 export const getCaregiverAlerts = async (req: Request, res: Response) => {
   try {
-    const patientId = (req.query.patientId as string) || 'pat-1';
+    const rawPatientId = req.query.patientId as string | undefined;
+    const patientId = await resolvePatientId(rawPatientId);
 
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
@@ -184,7 +192,7 @@ export const getCaregiverAlerts = async (req: Request, res: Response) => {
     if (!patient) return res.json({ success: true, data: alerts });
 
     // Low supply alerts
-    patient.medications.forEach((m) => {
+    (patient.medications || []).forEach((m: any) => {
       if (m.pillsRemaining <= m.refillThreshold) {
         alerts.push({
           id: `alert-refill-${m.id}`,
@@ -199,7 +207,7 @@ export const getCaregiverAlerts = async (req: Request, res: Response) => {
     });
 
     // Pending doses alert
-    const pendingCount = patient.scheduleItems.filter((s) => s.status === 'pending').length;
+    const pendingCount = (patient.scheduleItems || []).filter((s: any) => s.status === 'pending').length;
     if (pendingCount > 0) {
       alerts.push({
         id: `alert-pending-today`,

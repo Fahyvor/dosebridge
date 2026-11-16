@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { resolvePatientId, isValidObjectId } from '../lib/dbHelpers.js';
 
 function formatScheduleItem(item: any) {
   return {
@@ -46,7 +47,13 @@ function formatScheduleItem(item: any) {
 
 export const getSchedule = async (req: Request, res: Response) => {
   try {
-    const patientId = (req.query.patientId as string) || 'pat-1';
+    const rawPatientId = req.query.patientId as string | undefined;
+    const patientId = await resolvePatientId(rawPatientId);
+
+    if (!patientId) {
+      return res.json({ success: true, data: [] });
+    }
+
     const items = await prisma.scheduleItem.findMany({
       where: { patientId },
       include: { medication: true },
@@ -66,6 +73,10 @@ export const logDose = async (req: Request, res: Response) => {
 
     if (!scheduleId || !action) {
       return res.status(400).json({ success: false, message: 'scheduleId and action are required' });
+    }
+
+    if (!isValidObjectId(scheduleId)) {
+      return res.status(400).json({ success: false, message: 'Invalid schedule ID format' });
     }
 
     const scheduleItem = await prisma.scheduleItem.findUnique({
