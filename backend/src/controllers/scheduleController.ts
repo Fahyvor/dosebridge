@@ -81,13 +81,15 @@ export const logDose = async (req: Request, res: Response) => {
 
     const scheduleItem = await prisma.scheduleItem.findUnique({
       where: { id: scheduleId },
-      include: { medication: true },
+      include: { medication: true, patient: true },
     });
 
     if (!scheduleItem) {
       return res.status(404).json({ success: false, message: 'Schedule item not found' });
     }
 
+    const user = (req as any).user;
+    const authorName = loggedByName || user?.name || (loggedBy === 'caregiver' ? 'Caregiver' : scheduleItem.patient?.fullName || 'Patient');
     const now = new Date();
     const timeStr = customTime || now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const medName = scheduleItem.medication?.name || 'Medication';
@@ -100,7 +102,7 @@ export const logDose = async (req: Request, res: Response) => {
           status: 'taken',
           takenAt: timeStr,
           loggedBy: loggedBy || 'patient',
-          loggedByName: loggedByName || (loggedBy === 'caregiver' ? 'David Vance (Caregiver)' : 'Eleanor Vance'),
+          loggedByName: authorName,
         },
         include: { medication: true },
       });
@@ -123,7 +125,7 @@ export const logDose = async (req: Request, res: Response) => {
           timestamp: `Today at ${timeStr}`,
           scheduledFor: scheduleItem.scheduledTime,
           loggedBy: loggedBy || 'patient',
-          loggedByName: loggedByName || (loggedBy === 'caregiver' ? 'Caregiver' : 'Patient'),
+          loggedByName: authorName,
         },
       });
 
@@ -144,7 +146,7 @@ export const logDose = async (req: Request, res: Response) => {
           status: 'skipped',
           skipReason: reason || 'Patient declined',
           loggedBy: loggedBy || 'patient',
-          loggedByName: loggedByName || (loggedBy === 'caregiver' ? 'David Vance (Caregiver)' : 'Eleanor Vance'),
+          loggedByName: authorName,
         },
         include: { medication: true },
       });
@@ -158,7 +160,7 @@ export const logDose = async (req: Request, res: Response) => {
           timestamp: `Today at ${timeStr}`,
           scheduledFor: scheduleItem.scheduledTime,
           loggedBy: loggedBy || 'patient',
-          loggedByName: loggedByName || 'Patient',
+          loggedByName: authorName,
           notes: reason ? `Reason: ${reason}` : undefined,
         },
       });

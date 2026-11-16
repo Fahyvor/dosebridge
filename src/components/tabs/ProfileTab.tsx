@@ -29,6 +29,20 @@ export const ProfileTab: React.FC = () => {
   const [emRel, setEmRel] = useState(activePatient?.emergencyContact.relationship || '');
   const [savedNotice, setSavedNotice] = useState(false);
 
+  React.useEffect(() => {
+    if (activePatient) {
+      setName(activePatient.fullName);
+      setPreferredName(activePatient.preferredName || '');
+      setAge(activePatient.age);
+      setGender(activePatient.gender);
+      setLang(activePatient.primaryLanguage);
+      setLiteracy(activePatient.literacyMode);
+      setEmName(activePatient.emergencyContact.name);
+      setEmPhone(activePatient.emergencyContact.phone);
+      setEmRel(activePatient.emergencyContact.relationship);
+    }
+  }, [activePatient]);
+
   // New patient registration form
   const [regName, setRegName] = useState('');
   const [regAge, setRegAge] = useState(60);

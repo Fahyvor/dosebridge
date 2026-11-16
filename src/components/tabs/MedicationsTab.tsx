@@ -22,7 +22,7 @@ export const MedicationsTab: React.FC = () => {
   // Form fields
   const [formName, setFormName] = useState('');
   const [formGeneric, setFormGeneric] = useState('');
-  const [formStrength, setFormStrength] = useState('500 mg');
+  const [formStrength, setFormStrength] = useState('');
   const [formForm, setFormForm] = useState<'tablet' | 'capsule' | 'liquid' | 'inhaler' | 'injection' | 'drops'>('tablet');
   const [formColor, setFormColor] = useState('#2563eb');
   const [formShape, setFormShape] = useState<'round' | 'capsule' | 'oval' | 'square'>('oval');
@@ -32,9 +32,9 @@ export const MedicationsTab: React.FC = () => {
   const [formFoodRule, setFormFoodRule] = useState<'with_food' | 'empty_stomach' | 'after_food' | 'no_restriction'>('with_food');
   const [formTotalPills, setFormTotalPills] = useState(30);
   const [formRemaining, setFormRemaining] = useState(30);
-  const [formDoctor, setFormDoctor] = useState('Dr. Sarah Chen, MD');
-  const [formPharmacy, setFormPharmacy] = useState('Community Health Pharmacy');
-  const [formRx, setFormRx] = useState('RX-102938');
+  const [formDoctor, setFormDoctor] = useState('');
+  const [formPharmacy, setFormPharmacy] = useState('');
+  const [formRx, setFormRx] = useState('');
 
   const [refillNotice, setRefillNotice] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export const MedicationsTab: React.FC = () => {
     setEditingMed(null);
     setFormName('');
     setFormGeneric('');
-    setFormStrength('500 mg');
+    setFormStrength('');
     setFormForm('tablet');
     setFormColor('#2563eb');
     setFormShape('oval');
@@ -53,9 +53,9 @@ export const MedicationsTab: React.FC = () => {
     setFormFoodRule('with_food');
     setFormTotalPills(30);
     setFormRemaining(30);
-    setFormDoctor('Dr. Sarah Chen, MD');
-    setFormPharmacy('Community Health Pharmacy');
-    setFormRx(`RX-${Math.floor(100000 + Math.random() * 900000)}`);
+    setFormDoctor('');
+    setFormPharmacy('');
+    setFormRx('');
     setIsModalOpen(true);
   };
 

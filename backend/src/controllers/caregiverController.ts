@@ -135,14 +135,18 @@ export const createCaregiverNote = async (req: Request, res: Response) => {
     }
 
     const patientId = await resolvePatientId(rawPatientId);
+    const user = (req as any).user;
+    const authorName = caregiverName || (user ? `${user.name} (${user.role === 'CAREGIVER' ? 'Caregiver' : user.role === 'CLINICIAN' ? 'Clinician' : 'Care Team'})` : 'Care Team Member');
+    const now = new Date();
+    const timeStr = `Today at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
     const newNote = await prisma.caregiverNote.create({
       data: {
         patientId,
-        caregiverId: 'cg-1',
-        caregiverName: caregiverName || 'David Vance (Caregiver)',
+        caregiverId: user?.caregiverId || user?.userId || 'cg-caregiver',
+        caregiverName: authorName,
         text: text.trim(),
-        timestamp: 'Just now',
+        timestamp: timeStr,
         pinned: priority === 'important',
         priority: priority || 'normal',
       },

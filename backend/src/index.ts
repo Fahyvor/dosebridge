@@ -1,8 +1,32 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Load environment variables before routing or Prisma initialization
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+if (!process.env.DATABASE_URL && typeof process.loadEnvFile === 'function') {
+  const envCandidates = [
+    path.resolve(process.cwd(), 'backend/.env'),
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '../../.env'),
+  ];
+  for (const envPath of envCandidates) {
+    if (fs.existsSync(envPath)) {
+      try {
+        process.loadEnvFile(envPath);
+        break;
+      } catch {
+        // continue
+      }
+    }
+  }
+}
+
 import express from 'express';
 import cors from 'cors';
-import path from 'node:path';
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 
 import authRouter from './routes/auth.js';
 import patientsRouter from './routes/patients.js';
@@ -11,9 +35,6 @@ import scheduleRouter from './routes/schedule.js';
 import adherenceRouter from './routes/adherence.js';
 import caregiverRouter from './routes/caregiver.js';
 import resourcesRouter from './routes/resources.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);

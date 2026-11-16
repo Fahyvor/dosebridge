@@ -18,16 +18,72 @@ export const getAdherence = async (req: Request, res: Response) => {
     const skippedCount = logs.filter((l: any) => l.action === 'skipped').length;
     const adherenceRate = totalLogs > 0 ? Math.round((takenCount / totalLogs) * 100) : 100;
 
-    // Weekly day breakdown
-    const weeklyBreakdown = [
-      { day: 'Mon', date: 'Nov 10', taken: 4, scheduled: 4, pct: 100 },
-      { day: 'Tue', date: 'Nov 11', taken: 4, scheduled: 4, pct: 100 },
-      { day: 'Wed', date: 'Nov 12', taken: 3, scheduled: 4, pct: 75 },
-      { day: 'Thu', date: 'Nov 13', taken: 4, scheduled: 4, pct: 100 },
-      { day: 'Fri', date: 'Nov 14', taken: 4, scheduled: 4, pct: 100 },
-      { day: 'Sat', date: 'Nov 15', taken: 2, scheduled: 2, pct: 100 },
-      { day: 'Sun', date: 'Nov 16', taken: takenCount > 0 ? 2 : 0, scheduled: 4, pct: adherenceRate, current: true },
-    ];
+    // Total daily scheduled doses for this patient from real ScheduleItem table
+    const patientScheduleItems = await prisma.scheduleItem.findMany({
+      where: { patientId },
+    });
+    const scheduledPerDay = patientScheduleItems.length || 1;
+
+    // All logs for the patient to calculate daily stats & real streaks
+    const allPatientLogs = await prisma.adherenceLog.findMany({
+      where: { patientId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    const weeklyBreakdown = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayName = daysOfWeek[d.getDay()];
+      const monthName = months[d.getMonth()];
+      const dateStr = `${monthName} ${d.getDate()}`;
+      const isToday = i === 0;
+
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+      const dayLogs = allPatientLogs.filter((log: any) => {
+        const logDate = new Date(log.createdAt);
+        return logDate >= dayStart && logDate <= dayEnd;
+      });
+
+      const dayTaken = dayLogs.filter((l: any) => l.action === 'taken').length;
+      const dayScheduled = scheduledPerDay;
+      const dayPct = dayScheduled > 0 ? Math.min(100, Math.round((dayTaken / dayScheduled) * 100)) : 100;
+
+      weeklyBreakdown.push({
+        day: dayName,
+        date: dateStr,
+        taken: dayTaken,
+        scheduled: dayScheduled,
+        pct: dayPct,
+        current: isToday,
+      });
+    }
+
+    // Real streak calculation: consecutive days with taken doses
+    let streakDays = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+      const count = allPatientLogs.filter((l: any) => {
+        const logDate = new Date(l.createdAt);
+        return l.action === 'taken' && logDate >= dayStart && logDate <= dayEnd;
+      }).length;
+
+      if (count > 0) {
+        streakDays++;
+      } else if (i > 0) {
+        break;
+      }
+    }
 
     const encouragementMessage =
       adherenceRate >= 90
@@ -40,7 +96,7 @@ export const getAdherence = async (req: Request, res: Response) => {
       success: true,
       data: {
         adherenceRate,
-        streakDays: 6,
+        streakDays: streakDays > 0 ? streakDays : 1,
         totalDosesTaken: takenCount,
         totalDosesSkipped: skippedCount,
         weeklyBreakdown,

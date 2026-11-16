@@ -14,14 +14,7 @@ interface AuthState {
 const initialToken = getStoredToken();
 
 const initialState: AuthState = {
-  user: {
-    id: 'usr-eleanor',
-    email: 'eleanor@example.com',
-    name: 'Eleanor Vance',
-    role: 'PATIENT',
-    patientId: 'pat-1',
-    caregiverId: null,
-  },
+  user: null,
   token: initialToken,
   role: 'PATIENT',
   isAuthenticated: !!initialToken,
